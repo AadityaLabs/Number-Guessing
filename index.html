@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Number - Fun Level Challenge</title>
+    <!-- Tailwind CSS for sleek styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter & Outfit for friendly, readable typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for beautiful icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-slate-100 flex flex-col min-h-screen relative selection:bg-blue-500 selection:text-white">
+
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Main Game Wrapper -->
+    <div class="relative z-10 flex-grow flex flex-col max-w-5xl w-full mx-auto px-4 py-6 md:py-8 justify-between">
+        
+        <!-- Header: Stats, Streak & Coins -->
+        <header class="flex items-center justify-between w-full mb-6 bg-slate-900/50 backdrop-blur-xl border border-slate-800/60 rounded-2xl p-4 glow-blue transition-all">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-gamepad text-xl animate-bounce" style="animation-duration: 3s;"></i>
+                </div>
+                <div>
+                    <h1 class="heading-font text-lg font-bold tracking-wide bg-gradient-to-r from-blue-200 to-indigo-400 bg-clip-text text-transparent">Guess the Number</h1>
+                    <span class="text-xs text-slate-400 tracking-wider font-semibold uppercase">Clean & Fun Edition</span>
+                </div>
+            </div>
+
+            <!-- Header Stats -->
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <!-- Win Streak -->
+                <div class="flex items-center bg-slate-800/50 border border-slate-700/50 px-3 py-1.5 rounded-xl text-amber-400" title="Your current win streak">
+                    <i class="fa-solid fa-fire text-sm mr-1.5 animate-pulse"></i>
+                    <span id="streakCounter" class="font-bold text-sm">0</span>
+                </div>
+                
+                <!-- Coin Bank -->
+                <div class="flex items-center bg-slate-800/50 border border-slate-700/50 px-3 py-1.5 rounded-xl text-yellow-400" title="Your coins">
+                    <i class="fa-solid fa-coins text-sm mr-1.5"></i>
+                    <span id="coinCounter" class="font-bold text-sm">50</span>
+                </div>
+
+                <!-- Sound Effects Toggle -->
+                <button id="soundToggleBtn" onclick="toggleSound()" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800/60 border border-slate-700/50 hover:bg-slate-700/60 text-slate-300 transition-colors" title="Turn Sound On/Off">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-sm"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Game Section -->
+        <main class="flex-grow flex flex-col lg:flex-row gap-6 items-stretch justify-center relative mb-6">
+            
+            <!-- Left Panel: Levels Grid -->
+            <div class="w-full lg:w-72 bg-slate-900/30 backdrop-blur-xl border border-slate-800/60 rounded-3xl p-5 flex flex-col justify-between overflow-hidden">
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="heading-font font-semibold text-slate-300 flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-blue-400"></i> Game Levels
+                        </h2>
+                        <span class="text-xs bg-blue-500/20 text-blue-300 font-semibold px-2 py-0.5 rounded-full border border-blue-500/30">250+ Levels</span>
+                    </div>
+
+                    <!-- Scrollable level grid container -->
+                    <div class="space-y-2.5 max-h-[160px] lg:max-h-[300px] overflow-y-auto pr-1" id="levelContainer">
+                        <!-- Filled in dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- Active Rule description block -->
+                <div class="mt-4 pt-4 border-t border-slate-800/80">
+                    <div class="bg-gradient-to-r from-slate-800/60 to-slate-900/60 rounded-xl p-3.5 border border-slate-700/30">
+                        <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Level Settings:</div>
+                        <div id="levelModifierText" class="text-sm font-semibold text-blue-300 mt-1 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-play text-blue-400"></i> Normal Mode
+                        </div>
+                        <p id="levelDescText" class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                            Find the secret number in the range. Pay close attention to the hints after each guess!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel: The Play Area -->
+            <div id="gameWindow" class="flex-grow bg-slate-950/60 backdrop-blur-2xl border border-slate-800/80 rounded-3xl p-6 md:p-8 flex flex-col justify-between relative transition-all duration-300 overflow-hidden shadow-2xl">
+                
+                <!-- Interactive Welcome/Tutorial Screen Overlay -->
+                <div id="tutorialOverlay" class="absolute inset-0 z-40 bg-slate-950/95 flex flex-col items-center justify-center p-6 transition-all duration-500">
+                    <div class="max-w-md text-center space-y-6">
+                        <div class="relative inline-block">
+                            <div class="absolute inset-0 bg-blue-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
+                            <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white">
+                                <i id="tutorialIcon" class="fa-solid fa-hand-sparkles text-3xl animate-bounce"></i>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <span id="tutorialStepIndicator" class="text-xs tracking-widest text-blue-400 font-bold uppercase">Welcome, Player!</span>
+                            <h3 id="tutorialTitle" class="heading-font text-2xl font-black text-white">Let's Learn the Game</h3>
+                            <p id="tutorialText" class="text-slate-300 text-sm leading-relaxed font-light">
+                                Welcome to Guess the Number! Ready to put your guessing skills to the test over 250 exciting, challenging levels? Let's show you how to play.
+                            </p>
+                        </div>
+
+                        <!-- Onboarding progress indicators -->
+                        <div class="flex justify-center space-x-2">
+                            <span class="w-6 h-1.5 rounded-full transition-colors duration-300 bg-blue-500" id="dot1"></span>
+                            <span class="w-2 h-1.5 rounded-full transition-colors duration-300 bg-slate-800" id="dot2"></span>
+                            <span class="w-2 h-1.5 rounded-full transition-colors duration-300 bg-slate-800" id="dot3"></span>
+                        </div>
+
+                        <!-- Onboarding navigation controls -->
+                        <div class="flex items-center justify-between pt-2">
+                            <button id="skipTutorialBtn" onclick="skipTutorial()" class="text-slate-500 hover:text-slate-300 text-xs font-semibold tracking-wider uppercase transition-colors">
+                                Skip Tutorial
+                            </button>
+                            <button id="tutorialNextBtn" onclick="nextTutorialStep()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-semibold text-sm rounded-xl flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all">
+                                <span id="tutorialBtnLabel">Next Step</span> <i class="fa-solid fa-arrow-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Level Progress Labels -->
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col">
+                        <span class="text-xs uppercase text-slate-500 font-bold tracking-widest">Active Challenge</span>
+                        <div class="flex items-baseline space-x-2">
+                            <span id="levelLabel" class="heading-font text-3xl font-black text-white">Level 1</span>
+                            <span id="modeLabel" class="text-xs text-blue-400 font-medium bg-blue-500/10 px-2.5 py-0.5 rounded border border-blue-500/20">Normal</span>
+                        </div>
+                    </div>
+
+                    <!-- Heart/Life Counters -->
+                    <div class="flex flex-col items-end">
+                        <span class="text-xs uppercase text-slate-500 font-bold tracking-widest mb-1.5">Guesses Left</span>
+                        <div class="flex space-x-1" id="livesTracker">
+                            <!-- Populated with glowing heart icons by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guess range boxes and Mystery Number Display -->
+                <div class="space-y-6 my-auto">
+                    <!-- High & Low range tags -->
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex-1 bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 text-center">
+                            <span class="text-xs text-slate-500 font-semibold block mb-1">Lowest Possible</span>
+                            <span id="minBoundLabel" class="heading-font text-3xl font-extrabold text-slate-300">1</span>
+                        </div>
+
+                        <!-- Spinning Mystery Circle -->
+                        <div class="relative w-24 h-24 md:w-28 md:h-28 flex items-center justify-center flex-shrink-0">
+                            <div class="absolute inset-0 rounded-full border border-dashed border-blue-500/30 animate-spin" style="animation-duration: 15s;"></div>
+                            <div class="absolute -inset-2 rounded-full border border-blue-500/10 animate-pulse"></div>
+                            <div id="targetMysterySphere" class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-tr from-slate-900 to-slate-950 border border-blue-500/40 flex items-center justify-center shadow-lg transition-all duration-500">
+                                <span id="mysterySign" class="heading-font text-3xl font-extrabold text-blue-400 animate-pulse">?</span>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 text-center">
+                            <span class="text-xs text-slate-500 font-semibold block mb-1">Highest Possible</span>
+                            <span id="maxBoundLabel" class="heading-font text-3xl font-extrabold text-slate-300">10</span>
+                        </div>
+                    </div>
+
+                    <!-- Clue Feedback Center -->
+                    <div class="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 text-center relative overflow-hidden">
+                        <div id="hintMessage" class="text-slate-300 text-sm font-medium tracking-wide">
+                            Submit a guess above to see how close you are!
+                        </div>
+                        
+                        <!-- Heat gauge bar -->
+                        <div class="mt-3 h-2 w-full bg-slate-850 rounded-full overflow-hidden relative">
+                            <div id="heatGauge" class="h-full bg-slate-600 transition-all duration-500 w-0"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-500 uppercase font-semibold mt-1.5">
+                            <span>Very Cold</span>
+                            <span>Cold</span>
+                            <span>Warm</span>
+                            <span>Very Hot!</span>
+                        </div>
+                    </div>
+
+                    <!-- Input Controls & Manual Helper Buttons -->
+                    <div class="flex flex-col gap-3">
+                        <div class="flex gap-2 relative">
+                            <input type="number" id="guessInput" placeholder="Enter your guess..." class="flex-1 bg-slate-900/60 hover:bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 rounded-2xl px-5 py-4 text-lg text-center font-bold text-white tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600" min="1" max="10">
+                            <button onclick="submitGuess()" class="px-8 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl flex items-center gap-2 bouncy-hover shadow-lg shadow-blue-600/10">
+                                <span>GUESS</span> <i class="fa-solid fa-crosshairs"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Mini Tweak Keypad -->
+                        <div class="grid grid-cols-5 gap-1.5 text-xs">
+                            <button onclick="modifyGuess(-5)" class="bg-slate-900/40 hover:bg-slate-800/60 border border-slate-800 py-1.5 rounded-lg text-slate-400 font-semibold transition-colors">-5</button>
+                            <button onclick="modifyGuess(-1)" class="bg-slate-900/40 hover:bg-slate-800/60 border border-slate-800 py-1.5 rounded-lg text-slate-400 font-semibold transition-colors">-1</button>
+                            <button onclick="clearGuess()" class="bg-slate-900/40 hover:bg-slate-800/60 border border-slate-800 py-1.5 rounded-lg text-red-400 font-semibold transition-colors">Clear</button>
+                            <button onclick="modifyGuess(1)" class="bg-slate-900/40 hover:bg-slate-800/60 border border-slate-800 py-1.5 rounded-lg text-slate-400 font-semibold transition-colors">+1</button>
+                            <button onclick="modifyGuess(5)" class="bg-slate-900/40 hover:bg-slate-800/60 border border-slate-800 py-1.5 rounded-lg text-slate-400 font-semibold transition-colors">+5</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shop Inventory & Help Items -->
+                <div class="mt-6 pt-5 border-t border-slate-900/80">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex justify-between items-center">
+                        <span>Helpful Power-ups (Shop)</span>
+                        <span class="text-[11px] text-slate-400 normal-case font-normal">Click to buy & use to survive tough levels</span>
+                    </h4>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <button onclick="buyPowerUp('scanner')" id="powerup-scanner" class="relative group bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800 hover:border-blue-500/30 p-2.5 rounded-2xl flex items-center gap-2 text-left transition-all">
+                            <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                <i class="fa-solid fa-arrows-left-right"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[11px] font-bold text-slate-300 truncate">Scanner</div>
+                                <div class="text-[10px] text-slate-500 flex items-center gap-0.5">
+                                    <i class="fa-solid fa-coins text-[8px] text-yellow-500"></i> 15 Coins
+                                </div>
+                            </div>
+                            <span id="inventory-scanner" class="absolute -top-1.5 -right-1.5 bg-blue-500 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white">0</span>
+                        </button>
+
+                        <button onclick="buyPowerUp('shield')" id="powerup-shield" class="relative group bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800 hover:border-emerald-500/30 p-2.5 rounded-2xl flex items-center gap-2 text-left transition-all">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                                <i class="fa-solid fa-shield"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[11px] font-bold text-slate-300 truncate font-sans">Shield +1</div>
+                                <div class="text-[10px] text-slate-500 flex items-center gap-0.5">
+                                    <i class="fa-solid fa-coins text-[8px] text-yellow-500"></i> 20 Coins
+                                </div>
+                            </div>
+                            <span id="inventory-shield" class="absolute -top-1.5 -right-1.5 bg-emerald-500 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white">0</span>
+                        </button>
+
+                        <button onclick="buyPowerUp('freeze')" id="powerup-freeze" class="relative group bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800 hover:border-cyan-500/30 p-2.5 rounded-2xl flex items-center gap-2 text-left transition-all">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-sm group-hover:bg-cyan-500 group-hover:text-white transition-all">
+                                <i class="fa-solid fa-snowflake"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[11px] font-bold text-slate-300 truncate">Freeze 15s</div>
+                                <div class="text-[10px] text-slate-500 flex items-center gap-0.5">
+                                    <i class="fa-solid fa-coins text-[8px] text-yellow-500"></i> 10 Coins
+                                </div>
+                            </div>
+                            <span id="inventory-freeze" class="absolute -top-1.5 -right-1.5 bg-cyan-500 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white">0</span>
+                        </button>
+
+                        <button onclick="buyPowerUp('compass')" id="powerup-compass" class="relative group bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800 hover:border-purple-500/30 p-2.5 rounded-2xl flex items-center gap-2 text-left transition-all">
+                            <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-sm group-hover:bg-purple-500 group-hover:text-white transition-all">
+                                <i class="fa-solid fa-compass"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[11px] font-bold text-slate-300 truncate">Clue Finder</div>
+                                <div class="text-[10px] text-slate-500 flex items-center gap-0.5">
+                                    <i class="fa-solid fa-coins text-[8px] text-yellow-500"></i> 25 Coins
+                                </div>
+                            </div>
+                            <span id="inventory-compass" class="absolute -top-1.5 -right-1.5 bg-purple-500 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="levelTimerBar" class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-1000 w-full opacity-0"></div>
+            </div>
+        </main>
+
+        <footer class="text-center py-2 text-slate-600 text-[11px] tracking-wider uppercase flex justify-between items-center bg-slate-900/10 px-4 rounded-xl border border-slate-800/10">
+            <span>Simple, Human Style Design</span>
+            <span>All Levels Customizable</span>
+        </footer>
+    </div>
+
+    <div id="modalOverlay" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div id="modalBox" class="bg-slate-900 border border-slate-800/80 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center space-y-5 shadow-2xl scale-90 transition-transform duration-300">
+            <div id="modalIconContainer" class="w-16 h-16 mx-auto rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center text-2xl">
+                <i id="modalIcon" class="fa-solid fa-gift"></i>
+            </div>
+            <div class="space-y-2">
+                <h3 id="modalTitle" class="heading-font text-xl font-bold text-white">Action Complete</h3>
+                <p id="modalDescription" class="text-slate-400 text-sm leading-relaxed">Your status has updated successfully.</p>
+            </div>
+            <button id="modalActionBtn" onclick="closeModal()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition-colors bouncy-hover shadow-lg shadow-blue-600/10">
+                Continue
+            </button>
+        </div>
+    </div>
+
+    <script src="app.js" defer></script>
+</body>
+</html>
